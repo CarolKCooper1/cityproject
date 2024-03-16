@@ -1,0 +1,15 @@
+{
+	"folders": [
+		{
+			"name": "CapStoneProject",
+			"path": "../../CapStone/CapStoneProject"
+		}
+	],
+	"settings": {
+		"extensions.ignoreRecommendations": true,
+		"C_Cpp.default.configurationProvider": "particle.particle-vscode-core",
+		"files.associations": {
+			"*.ino": "cpp"
+		}
+	}
+}
