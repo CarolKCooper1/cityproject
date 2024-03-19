@@ -1,14 +1,13 @@
 /* 
- * Project City Project
+ * Project Capstone
  * Author: CKCooper
- * Date: 3/16/2024
+ * Date: 11/28/2023
  * For comprehensive documentation and examples, please visit:
  * https://docs.particle.io/firmware/best-practices/firmware-template/
  */
 
 // Include Particle Device OS APIs
 #include "Particle.h"
-#include <DFPlay.h>
 #include <neopixel.h>
 #include "Colors.h"
 #include <Adafruit_MQTT.h>
@@ -17,7 +16,7 @@
 #include "IoTTimer.h"
 #include "Button.h"
 #include "credentials.h"
-
+#include <DFPlay.h>
 
 TCPClient TheClient; 
 IoTTimer pixelTimer;
@@ -25,8 +24,8 @@ Servo myServo;
 IoTTimer scentTimer;
 Button soundButton(D1);
 Button scentButton(D10);
-Button startButton(D5);
-Adafruit_NeoPixel pixel(10, SPI1, WS2812B);
+Button startButton(D4);
+Adafruit_NeoPixel pixel(24, SPI1, WS2812B);
 DFPlay dfPlay;
 
 // Setup the MQTT client class by passing in the WiFi client and MQTT server and login details. 
@@ -46,15 +45,14 @@ const int COUNT=5;
 int counter;
 int scentCounter;
 int subValue,subValue1;
-
 //functions
 int randomPixel();
 void MQTT_connect();
 bool MQTT_ping();
 void playsounds();
 
-// Let Device OS manage the connection to the Particle Cloud
-SYSTEM_MODE(AUTOMATIC);
+
+SYSTEM_MODE(SEMI_AUTOMATIC);
 
 // Run the application and system concurrently in separate threads
 SYSTEM_THREAD(ENABLED);
@@ -68,7 +66,6 @@ Serial.begin(9600);
 waitFor(Serial.isConnected,10000);
 
 pinMode (SPIN, OUTPUT);
-
 pixel.begin();
 pixel.setBrightness(255);
 pixel.show();
@@ -82,31 +79,32 @@ WiFi.on();
 WiFi.connect();
 while(WiFi.connecting()) {
   Serial.printf(".");
- }
-Serial.printf("\n\n");
+}
+ Serial.printf("\n\n");
 
 mqtt.subscribe(&buttonFeed);
 mqtt.subscribe(&scentFeed);
 
+
 //dhplayer setup
-  dfPlay.begin();					// Prepares DFPlay for execution
-  dfPlay.setVolume(15);			// Sets volume level to 10 (valid range = 0 to 30)
-  Selection SDcard = {2,0,0,0,0}; // Selects all tracks on the SD card
-  Serial.printf("tracks selected\n");
-  dfPlay.play(SDcard);			// Plays the selection
-  Serial.printf("Tracks playing\n");
+dfPlay.begin();					// Prepares DFPlay for execution
+dfPlay.setVolume(15);			// Sets volume level to 10 (valid range = 0 to 30)
+Selection SDcard = {2,0,0,0,0}; // Selects all tracks on the SD card
+Serial.printf("tracks selected\n");
+dfPlay.play(SDcard);			// Plays the selection
+Serial.printf("Tracks playing\n");
 
 }
 
 void loop() {
-  MQTT_connect();
-  MQTT_ping();
+MQTT_connect();
+MQTT_ping();
 
-//button to manually start the lights
-  if(startButton.isClicked()){
-  Serial.printf("pixel button is clicked\n");
-    counter = 0;
-  }
+//buttons to manually start the lights and open the scent box
+if(startButton.isClicked()){
+Serial.printf("pixel button is clicked\n");
+  counter = 0;
+}
 //counter
 if(counter<COUNT){
   counter=counter+randomPixel();
@@ -115,9 +113,8 @@ else{
   if(pixelTimer.isTimerReady()){
     pixel.clear();
     pixel.show();
-  }
- }
-
+}
+}
 // sound button
 if (soundButton.isClicked()){
   Serial.printf("soundButton.isClicked\n");
@@ -127,44 +124,46 @@ else {
   dfPlay.stop();
   dfPlay.manageDevice();
 } 
-
-// scent button
-if(scentButton.isClicked()){
-  digitalWrite(SPIN, HIGH);
-  Serial.printf("scent on\n");
-  delay(5000);
-  digitalWrite(SPIN, LOW);
-  Serial.printf("scent off\n");
-}
 // if(scentButton.isClicked()){
-//   Serial.printf("scent button is clicked\n");
-//   scentCounter=0;
-//   scentTimer.startTimer(1);
+//   digitalWrite(SPIN, HIGH);
+//   Serial.printf("scent on\n");
+//   delay(5000);
+//   digitalWrite(SPIN, LOW);
+//   Serial.printf("scent off\n");
 // }
 
-// // switch case for servo to move the opening to one side of the box, then the other side of the box and then close
-// if(scentTimer.isTimerReady()) {
-//      switch (scentCounter){
-//       case 0:
-//           Serial.printf("Scent Counter %i\n",scentCounter);
-//           myServo.write(125);
-//           scentCounter++;
-//           scentTimer.startTimer(5000);
-//           break;
-//       case 1:
-//           Serial.printf("Scent Counter %i\n",scentCounter);
-//           myServo.write(10);
-//           scentCounter++;
-//           scentTimer.startTimer(5000);
-//           break;
-//       case 2:
-//           Serial.printf("Scent Counter %i\n",scentCounter);
-//           myServo.write(75);
-//           scentCounter++;
-//           scentTimer.startTimer(5000);
-//           break;
-//       }
-// }
+if(scentButton.isClicked()){
+  Serial.printf("scent button is clicked\n");
+  scentCounter=0;
+  scentTimer.startTimer(1);
+}
+
+//switch case for servo to move the opening to one side of the box, then the other side of the box and then close
+if(scentTimer.isTimerReady()) {
+     switch (scentCounter){
+      case 0:
+          Serial.printf("Scent Counter %i\n",scentCounter);
+          digitalWrite(SPIN, HIGH);
+          Serial.printf("scent on\n");
+          scentCounter++;
+          scentTimer.startTimer(5000);
+          break;
+      case 1:
+          Serial.printf("Scent Counter %i\n",scentCounter);
+          digitalWrite(SPIN, LOW);
+          Serial.printf("scent off\n");
+          scentCounter++;
+          scentTimer.startTimer(5000);
+          break;
+      // case 2:
+      //     Serial.printf("Scent Counter %i\n",scentCounter);
+      //     myServo.write(75);
+      //     scentCounter++;
+      //     scentTimer.startTimer(5000);
+      //     break;
+      }
+}
+
 Adafruit_MQTT_Subscribe *subscription;
   while ((subscription = mqtt.readSubscription(1000))) {
     if (subscription == &buttonFeed) {
@@ -186,6 +185,7 @@ Adafruit_MQTT_Subscribe *subscription;
     }
 }
 }
+
 // Function to connect and reconnect as necessary to the MQTT server.
 // Should be called in the loop function and it will take care if connecting.
 void MQTT_connect() {
@@ -221,8 +221,8 @@ bool MQTT_ping() {
       last = millis();
   }
   return pingStatus;
-
 }
+
 // function to return a random color on a random pixel on a timer
 int randomPixel(){
   int whichPix;
@@ -243,7 +243,6 @@ int randomPixel(){
 
   return value;
 }
-
 void playsounds(){
   Serial.printf("playsounds is running\n");
   dfPlay.manageDevice();     // Sends commands to DFPlayer & processes returned data.
