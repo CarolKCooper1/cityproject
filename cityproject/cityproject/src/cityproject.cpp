@@ -40,11 +40,13 @@ Adafruit_MQTT_Subscribe scentFeed = Adafruit_MQTT_Subscribe(&mqtt, AIO_USERNAME 
 
 //variables
 const int SPIN=D5;
+const int SPIN1=D6;
 const int SERVPIN = D13;
 const int COUNT=5;
 int counter;
 int scentCounter;
 int subValue,subValue1;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       
 //functions
 int randomPixel();
 void MQTT_connect();
@@ -66,6 +68,7 @@ Serial.begin(9600);
 waitFor(Serial.isConnected,10000);
 
 pinMode (SPIN, OUTPUT);
+pinMode (SPIN1, OUTPUT);
 pixel.begin();
 pixel.setBrightness(255);
 pixel.show();
@@ -155,12 +158,19 @@ if(scentTimer.isTimerReady()) {
           scentCounter++;
           scentTimer.startTimer(5000);
           break;
-      // case 2:
-      //     Serial.printf("Scent Counter %i\n",scentCounter);
-      //     myServo.write(75);
-      //     scentCounter++;
-      //     scentTimer.startTimer(5000);
-      //     break;
+      case 2:
+          Serial.printf("Scent Counter %i\n",scentCounter);
+          digitalWrite(SPIN1, HIGH);
+          scentCounter++;
+          scentTimer.startTimer(5000);
+          break;
+                break;
+      case 3:
+          Serial.printf("Scent Counter %i\n",scentCounter);
+          digitalWrite(SPIN1, LOW);
+          scentCounter++;
+          scentTimer.startTimer(5000);
+          break;
       }
 }
 
