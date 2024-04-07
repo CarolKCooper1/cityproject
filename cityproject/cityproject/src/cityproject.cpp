@@ -17,7 +17,11 @@
 #include "Button.h"
 #include "credentials.h"
 #include <DFPlay.h>
+#include "Stepper.h"
 
+const int steps=2048;
+
+Stepper myStepper(steps, D16, D17, D15, D18);
 TCPClient TheClient; 
 IoTTimer pixelTimer;
 Servo myServo;
@@ -97,6 +101,7 @@ Serial.printf("tracks selected\n");
 dfPlay.play(SDcard);			// Plays the selection
 Serial.printf("Tracks playing\n");
 
+myStepper.setSpeed(10);
 }
 
 void loop() {
@@ -127,13 +132,7 @@ else {
   dfPlay.stop();
   dfPlay.manageDevice();
 } 
-// if(scentButton.isClicked()){
-//   digitalWrite(SPIN, HIGH);
-//   Serial.printf("scent on\n");
-//   delay(5000);
-//   digitalWrite(SPIN, LOW);
-//   Serial.printf("scent off\n");
-// }
+
 
 if(scentButton.isClicked()){
   Serial.printf("scent button is clicked\n");
@@ -141,33 +140,38 @@ if(scentButton.isClicked()){
   scentTimer.startTimer(1);
 }
 
-//switch case for servo to move the opening to one side of the box, then the other side of the box and then close
+//switch case for scent and stepper motor
 if(scentTimer.isTimerReady()) {
      switch (scentCounter){
-      case 0:
+      case 0://scent 1 on
           Serial.printf("Scent Counter %i\n",scentCounter);
           digitalWrite(SPIN, HIGH);
           Serial.printf("scent on\n");
           scentCounter++;
           scentTimer.startTimer(5000);
           break;
-      case 1:
+      case 1://scent 1 off
           Serial.printf("Scent Counter %i\n",scentCounter);
           digitalWrite(SPIN, LOW);
           Serial.printf("scent off\n");
           scentCounter++;
           scentTimer.startTimer(5000);
           break;
-      case 2:
+      case 2://scent 2 on
           Serial.printf("Scent Counter %i\n",scentCounter);
           digitalWrite(SPIN1, HIGH);
           scentCounter++;
           scentTimer.startTimer(5000);
           break;
-                break;
-      case 3:
+      case 3://scent 2 off
           Serial.printf("Scent Counter %i\n",scentCounter);
           digitalWrite(SPIN1, LOW);
+          scentCounter++;
+          scentTimer.startTimer(5000);
+          break;
+      case 4://stepper motor
+          Serial.printf("Scent Counter %i\n",scentCounter);
+          myStepper.step(steps);
           scentCounter++;
           scentTimer.startTimer(5000);
           break;
@@ -194,6 +198,11 @@ Adafruit_MQTT_Subscribe *subscription;
     }
     }
 }
+// myStepper.step(steps);
+// myStepper.step(steps);
+// delay(500);
+// myStepper.step(-steps);
+// delay(500);
 }
 
 // Function to connect and reconnect as necessary to the MQTT server.
