@@ -24,9 +24,9 @@ const int steps=2048;
 Stepper myStepper(steps, D16, D17, D15, D18);
 TCPClient TheClient; 
 IoTTimer pixelTimer;
-Servo myServo;
+IoTTimer seqTimer;
 IoTTimer scentTimer;
-Button soundButton(D1);
+Button seqButton(D3);
 Button scentButton(D10);
 Button startButton(D4);
 Adafruit_NeoPixel pixel(24, SPI1, WS2812B);
@@ -49,6 +49,7 @@ const int SERVPIN = D13;
 const int COUNT=5;
 int counter;
 int scentCounter;
+int seqCounter;
 int subValue,subValue1;
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        
 //functions
@@ -73,6 +74,9 @@ waitFor(Serial.isConnected,10000);
 
 pinMode (SPIN, OUTPUT);
 pinMode (SPIN1, OUTPUT);
+// pinMode(D4,INPUT_PULLDOWN);
+pinMode(D10,INPUT_PULLDOWN);
+// pinMode(D1,INPUT_PULLDOWN);
 pixel.begin();
 pixel.setBrightness(255);
 pixel.show();
@@ -81,6 +85,7 @@ pixelTimer.startTimer(1000);
 scentTimer.startTimer(1000);
 counter=COUNT;
 scentCounter=COUNT;
+seqCounter=COUNT;
 
 WiFi.on();
 WiFi.connect();
@@ -123,8 +128,8 @@ else{
     pixel.show();
 }
 }
-// sound button
-if (soundButton.isClicked()){
+//sound button
+if (scentButton.isClicked()){
   Serial.printf("soundButton.isClicked\n");
   playsounds();
 } 
@@ -134,50 +139,122 @@ else {
 } 
 
 
+if(seqButton.isClicked()){
+  Serial.printf("scent button is clicked\n");
+  seqCounter=0;
+  seqTimer.startTimer(1);
+  Serial.printf("pixel button is clicked\n");
+  counter = 0;
+}
+
+//switch case for sequence
+if(seqTimer.isTimerReady()) {
+     switch (seqCounter){
+      case 0://lights
+          Serial.printf("SC %i\n",seqCounter);
+          Serial.printf("lights\n");
+          //counter
+        if(counter<COUNT){
+          counter=counter+randomPixel();
+          }
+        else{
+        if(pixelTimer.isTimerReady()){
+          pixel.clear();
+          pixel.show();
+        }
+      }
+          seqCounter++;
+          seqTimer.startTimer(50000);
+          break;
+      case 1://sound
+          Serial.printf("SC %i\n",seqCounter);
+          Serial.printf("sound\n");
+          playsounds();
+          dfPlay.stop();
+          dfPlay.manageDevice();
+          seqCounter++;
+          seqTimer.startTimer(96000);
+          break;
+      case 2://scent 1 on
+          Serial.printf("SC %i\n",seqCounter);
+          digitalWrite(SPIN, HIGH);
+          Serial.printf("scent on\n");
+          seqCounter++;
+          seqTimer.startTimer(10000);
+          break;
+      case 3://scent 1 off
+          Serial.printf("SC %i\n",seqCounter);
+          digitalWrite(SPIN, LOW);
+          Serial.printf("scent off\n");
+          seqCounter++;
+          seqTimer.startTimer(5000);
+          break;
+      case 4://scent 2 on
+          Serial.printf("SC %i\n",seqCounter);
+          digitalWrite(SPIN1, HIGH);
+          Serial.printf("scent 2 on\n");
+          seqCounter++;
+          seqTimer.startTimer(10000);
+          break;
+      case 5://scent 2 off
+          Serial.printf("SC %i\n",seqCounter);
+          digitalWrite(SPIN1, LOW);
+          Serial.printf("scent 2 off\n");
+          seqCounter++;
+          seqTimer.startTimer(5000);
+          break;
+      case 6://stepper motor
+          Serial.printf("SC %i\n",seqCounter);
+          myStepper.step(-steps);
+          Serial.printf("candy time\n");
+          seqCounter++;
+          seqTimer.startTimer(5000);
+          break;
+
+      }
+}
 if(scentButton.isClicked()){
   Serial.printf("scent button is clicked\n");
   scentCounter=0;
   scentTimer.startTimer(1);
 }
 
-//switch case for scent and stepper motor
+// switch case for internet
 if(scentTimer.isTimerReady()) {
      switch (scentCounter){
-      case 0://scent 1 on
+      case 0:
           Serial.printf("Scent Counter %i\n",scentCounter);
           digitalWrite(SPIN, HIGH);
-          Serial.printf("scent on\n");
           scentCounter++;
-          scentTimer.startTimer(5000);
+          scentTimer.startTimer(10000);
           break;
-      case 1://scent 1 off
+      case 1:
           Serial.printf("Scent Counter %i\n",scentCounter);
           digitalWrite(SPIN, LOW);
-          Serial.printf("scent off\n");
           scentCounter++;
           scentTimer.startTimer(5000);
           break;
-      case 2://scent 2 on
+      case 2:
           Serial.printf("Scent Counter %i\n",scentCounter);
           digitalWrite(SPIN1, HIGH);
           scentCounter++;
-          scentTimer.startTimer(5000);
+          scentTimer.startTimer(10000);
           break;
-      case 3://scent 2 off
+      case 3:
           Serial.printf("Scent Counter %i\n",scentCounter);
           digitalWrite(SPIN1, LOW);
           scentCounter++;
           scentTimer.startTimer(5000);
           break;
       case 4://stepper motor
-          Serial.printf("Scent Counter %i\n",scentCounter);
-          myStepper.step(steps);
+          Serial.printf("Scentcounter %i\n",scentCounter);
+          myStepper.step(-steps);
+          Serial.printf("candy time\n");
           scentCounter++;
           scentTimer.startTimer(5000);
           break;
       }
 }
-
 Adafruit_MQTT_Subscribe *subscription;
   while ((subscription = mqtt.readSubscription(1000))) {
     if (subscription == &buttonFeed) {
@@ -198,11 +275,6 @@ Adafruit_MQTT_Subscribe *subscription;
     }
     }
 }
-// myStepper.step(steps);
-// myStepper.step(steps);
-// delay(500);
-// myStepper.step(-steps);
-// delay(500);
 }
 
 // Function to connect and reconnect as necessary to the MQTT server.
