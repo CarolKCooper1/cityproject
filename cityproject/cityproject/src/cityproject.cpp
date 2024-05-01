@@ -210,7 +210,7 @@ if(seqTimer.isTimerReady()) {
         }
       }
           seqCounter++;
-          seqTimer.startTimer(50000);
+          seqTimer.startTimer(80000);
           break;
       case 1://sound
           Serial.printf("SC %i\n",seqCounter);
@@ -226,28 +226,28 @@ if(seqTimer.isTimerReady()) {
           digitalWrite(SPIN, HIGH);
           Serial.printf("scent on\n");
           seqCounter++;
-          seqTimer.startTimer(10000);
+          seqTimer.startTimer(1000);
           break;
       case 3://scent 1 off
           Serial.printf("SC %i\n",seqCounter);
           digitalWrite(SPIN, LOW);
           Serial.printf("scent off\n");
           seqCounter++;
-          seqTimer.startTimer(5000);
+          seqTimer.startTimer(500);
           break;
       case 4://scent 2 on
           Serial.printf("SC %i\n",seqCounter);
           digitalWrite(SPIN1, HIGH);
           Serial.printf("scent 2 on\n");
           seqCounter++;
-          seqTimer.startTimer(10000);
+          seqTimer.startTimer(1000);
           break;
       case 5://scent 2 off
           Serial.printf("SC %i\n",seqCounter);
           digitalWrite(SPIN1, LOW);
           Serial.printf("scent 2 off\n");
           seqCounter++;
-          seqTimer.startTimer(5000);
+          seqTimer.startTimer(500);
           break;
       case 6://stepper motor
           Serial.printf("SC %i\n",seqCounter);
@@ -277,28 +277,26 @@ if(scentTimer.isTimerReady()) {
           digitalWrite(SPIN, HIGH);
           Serial.printf("scent on\n");
           scentCounter++;
-          scentTimer.startTimer(5000);
-          scentTimer.startTimer(10000);
+          scentTimer.startTimer(1000);
           break;
       case 1://scent 1 off
           Serial.printf("Scent Counter %i\n",scentCounter);
           digitalWrite(SPIN, LOW);
           Serial.printf("scent off\n");
           scentCounter++;
-          scentTimer.startTimer(5000);
+          scentTimer.startTimer(500);
           break;
       case 2://scent 2 on
           Serial.printf("Scent Counter %i\n",scentCounter);
           digitalWrite(SPIN1, HIGH);
           scentCounter++;
-          scentTimer.startTimer(5000);
-          scentTimer.startTimer(10000);
+          scentTimer.startTimer(1000);
           break;
       case 3://scent 2 off
           Serial.printf("Scent Counter %i\n",scentCounter);
           digitalWrite(SPIN1, LOW);
           scentCounter++;
-          scentTimer.startTimer(5000);
+          scentTimer.startTimer(500);
           break;
       case 4://stepper motor
           Serial.printf("Scent Counter %i\n",scentCounter);
@@ -465,7 +463,7 @@ void bubbleSort(int *sortArray, int n) {
 
 void stopTheShow() {
   sortShow = false;
-  showTimer.startTimer(2500000);
+  showTimer.startTimer(250000);
 }
 void MQTTinterrupt(){
 
