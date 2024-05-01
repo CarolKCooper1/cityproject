@@ -1,6 +1,6 @@
 /* 
  * Project Capstone
- * Author: CKCooper
+ * Author: CKCooper (Visual BubbleSort for Photon 2 and NeoPixel tower and Interrupts by Brian Rashap)
  * Date: 11/28/2023
  * For comprehensive documentation and examples, please visit:
  * https://docs.particle.io/firmware/best-practices/firmware-template/
@@ -19,13 +19,36 @@
 #include <DFPlay.h>
 #include "Stepper.h"
 
-const int steps=2048;
+//constants
+const int SPIN=D5;
+const int SPIN1=D6;
+const int SERVPIN = D13;
+const int COUNT=5;
+const int steps=512;
+
+//variables
+int counter;
+int scentCounter;
+int seqCounter;
+int subValue,subValue1;
+
+// Bubble sort Constants
+const int PIXEL_COUNT = 25;
+const int SPEED = 25;
+const int colors[] = {0xFF0000, 0xE31C00, 0xC63900, 0xAA5500, 0x718E00, 0x55AA00, 0x39C600, 0x1CE300, 0x00FF00,
+                      0x00E31C, 0x00C639, 0x00AA55, 0x00718E, 0x0055AA, 0x0039C6, 0x001CE3, 0x0000FF};
+
+// Bubble sort Variables
+int colorArray[PIXEL_COUNT];
+bool sortShow;
 
 Stepper myStepper(steps, D16, D17, D15, D18);
 TCPClient TheClient; 
 IoTTimer pixelTimer;
+Servo myServo;
 IoTTimer seqTimer;
 IoTTimer scentTimer;
+Button soundButton(D1);
 Button seqButton(D3);
 Button scentButton(D10);
 Button startButton(D4);
@@ -42,21 +65,24 @@ Adafruit_MQTT_Subscribe buttonFeed = Adafruit_MQTT_Subscribe(&mqtt, AIO_USERNAME
 Adafruit_MQTT_Subscribe scentFeed = Adafruit_MQTT_Subscribe(&mqtt, AIO_USERNAME "/feeds/scentbutton"); 
 // Let Device OS manage the connection to the Particle Cloud
 
-//variables
-const int SPIN=D5;
-const int SPIN1=D6;
-const int SERVPIN = D13;
-const int COUNT=5;
-int counter;
-int scentCounter;
-int seqCounter;
-int subValue,subValue1;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       
+//Bubble Sort objects
+Adafruit_NeoPixel strip(PIXEL_COUNT, SPI1, WS2812B);
+IoTTimer showTimer;
+//IoTTimer showTimer1;
+
 //functions
 int randomPixel();
 void MQTT_connect();
 bool MQTT_ping();
 void playsounds();
+
+// Prototypes for local build, ok to leave in for Build IDE
+void fillArray(int *clrArray, int n);
+void bubbleSort(int *sortArray, int n);
+void showArray(int *pixelArray, int n, int speed = SPEED);
+void printArray(int *pixelArray, int n); 
+void stopTheShow();
+void MQTTinterrupt();
 
 
 SYSTEM_MODE(SEMI_AUTOMATIC);
@@ -75,7 +101,7 @@ waitFor(Serial.isConnected,10000);
 pinMode (SPIN, OUTPUT);
 pinMode (SPIN1, OUTPUT);
 // pinMode(D4,INPUT_PULLDOWN);
-pinMode(D10,INPUT_PULLDOWN);
+//pinMode(D10,INPUT_PULLDOWN);
 // pinMode(D1,INPUT_PULLDOWN);
 pixel.begin();
 pixel.setBrightness(255);
@@ -100,20 +126,40 @@ mqtt.subscribe(&scentFeed);
 
 //dhplayer setup
 dfPlay.begin();					// Prepares DFPlay for execution
-dfPlay.setVolume(15);			// Sets volume level to 10 (valid range = 0 to 30)
+dfPlay.setVolume(20);			// Sets volume level to 10 (valid range = 0 to 30)
 Selection SDcard = {2,0,0,0,0}; // Selects all tracks on the SD card
 Serial.printf("tracks selected\n");
 dfPlay.play(SDcard);			// Plays the selection
 Serial.printf("Tracks playing\n");
 
 myStepper.setSpeed(10);
+
+//Bubble sort setup
+delay(1000);
+strip.begin();
+strip.setBrightness(150);
+strip.show(); // Initialize all pixels to 'off'
+pinMode(A0,INPUT);
+pinMode(A1,INPUT);
+randomSeed(analogRead(A0)*analogRead(A1));
+pinMode(D3,INPUT_PULLDOWN);
+attachInterrupt(D3,stopTheShow,RISING);
+sortShow = false;
+showTimer.startTimer(10000);
+
 }
 
 void loop() {
 MQTT_connect();
 MQTT_ping();
 
-//buttons to manually start the lights and open the scent box
+if(sortShow){
+  Serial.printf("sortShow = %i\n",sortShow);
+  fillArray(colorArray,PIXEL_COUNT);
+  bubbleSort(colorArray,PIXEL_COUNT);
+} 
+else {
+//buttons to manually start the lights
 if(startButton.isClicked()){
 Serial.printf("pixel button is clicked\n");
   counter = 0;
@@ -206,6 +252,9 @@ if(seqTimer.isTimerReady()) {
       case 6://stepper motor
           Serial.printf("SC %i\n",seqCounter);
           myStepper.step(-steps);
+          myStepper.step(-steps);
+          delay(500);
+          myStepper.step(steps);
           Serial.printf("candy time\n");
           seqCounter++;
           seqTimer.startTimer(5000);
@@ -219,42 +268,53 @@ if(scentButton.isClicked()){
   scentTimer.startTimer(1);
 }
 
+//switch case for scent and stepper motor
 // switch case for internet
 if(scentTimer.isTimerReady()) {
      switch (scentCounter){
-      case 0:
+      case 0://scent 1 on
           Serial.printf("Scent Counter %i\n",scentCounter);
           digitalWrite(SPIN, HIGH);
+          Serial.printf("scent on\n");
           scentCounter++;
+          scentTimer.startTimer(5000);
           scentTimer.startTimer(10000);
           break;
-      case 1:
+      case 1://scent 1 off
           Serial.printf("Scent Counter %i\n",scentCounter);
           digitalWrite(SPIN, LOW);
+          Serial.printf("scent off\n");
           scentCounter++;
           scentTimer.startTimer(5000);
           break;
-      case 2:
+      case 2://scent 2 on
           Serial.printf("Scent Counter %i\n",scentCounter);
           digitalWrite(SPIN1, HIGH);
           scentCounter++;
+          scentTimer.startTimer(5000);
           scentTimer.startTimer(10000);
           break;
-      case 3:
+      case 3://scent 2 off
           Serial.printf("Scent Counter %i\n",scentCounter);
           digitalWrite(SPIN1, LOW);
           scentCounter++;
           scentTimer.startTimer(5000);
           break;
       case 4://stepper motor
-          Serial.printf("Scentcounter %i\n",scentCounter);
+          Serial.printf("Scent Counter %i\n",scentCounter);
           myStepper.step(-steps);
+          myStepper.step(-steps);
+          delay(500);
+          myStepper.step(steps);
+        
+         
           Serial.printf("candy time\n");
           scentCounter++;
           scentTimer.startTimer(5000);
           break;
       }
 }
+
 Adafruit_MQTT_Subscribe *subscription;
   while ((subscription = mqtt.readSubscription(1000))) {
     if (subscription == &buttonFeed) {
@@ -274,6 +334,13 @@ Adafruit_MQTT_Subscribe *subscription;
       scentTimer.startTimer(1);
     }
     }
+}
+
+}
+
+if(showTimer.isTimerReady()) {
+  showTimer.startTimer(10000);
+  sortShow = true;
 }
 }
 
@@ -297,11 +364,9 @@ void MQTT_connect() {
   }
   Serial.printf("MQTT Connected!\n");
 }
-
 bool MQTT_ping() {
   static unsigned int last;
   bool pingStatus;
-
   if ((millis()-last)>120000) {//this lets adafruit know we're still here
       Serial.printf("Pinging MQTT \n");
       pingStatus = mqtt.ping();
@@ -313,13 +378,11 @@ bool MQTT_ping() {
   }
   return pingStatus;
 }
-
 // function to return a random color on a random pixel on a timer
 int randomPixel(){
   int whichPix;
   int randColor;
   int value;
-
   value=0;
   if(pixelTimer.isTimerReady()){
       pixel.clear();
@@ -331,7 +394,6 @@ int randomPixel(){
       pixelTimer.startTimer(10000);
       value=1;
   } 
-
   return value;
 }
 void playsounds(){
@@ -342,5 +404,80 @@ void playsounds(){
   Serial.printf("Tracks playing\n");
   dfPlay.pause();
   Serial.printf("Player Paused\n");
- 
+}
+
+// Functions by Brian Rashap
+// Fill the array with random colors (Blue to Red)
+void fillArray(int *clrArray, int n) {
+  int i;
+
+  for(i=0;i<n;i++) {
+    clrArray[i] = colors[random(sizeof(colors)/4)];
+  }
+  showArray(clrArray, n);
+  delay(3300);
+  return;
+}
+
+// Display the array on the neoPixels
+void showArray(int *pixelArray, int n, int speed) {
+  int i;
+
+  for(i=0;i<n;i++) {
+    strip.setPixelColor(i,pixelArray[i]);
+  }
+  strip.show();
+  MQTTinterrupt();
+  if(!sortShow) {
+    return;
+  }
+  delay(speed);
+  return;
+}
+
+// Print the array to the screen (useful for troubleshooting the sort)
+void printArray(int *pixelArray, int n) {
+  int i;
+  for(i=0;i<n;i++) {
+    Serial.printf("Array[%i] = %i\n",i,pixelArray[i]);
+  }
+  return;
+}
+
+// Bubble Sort Function
+void bubbleSort(int *sortArray, int n) {
+  int i,j,swap;
+
+  for(i=0;i<n;i++) {
+    for(j=0;j<(n-1);j++) {
+      if(!sortShow) {
+        return;
+      }
+      if(sortArray[j] > sortArray[j+1]) {
+        swap = sortArray[j];
+        sortArray[j] = sortArray[j+1];
+        sortArray[j+1] = swap;
+      }
+    showArray(sortArray,n);
+    }
+  }
+}
+
+void stopTheShow() {
+  sortShow = false;
+  showTimer.startTimer(2500000);
+}
+void MQTTinterrupt(){
+
+Adafruit_MQTT_Subscribe *subscription;
+  while ((subscription = mqtt.readSubscription(100))) {
+    if (subscription == &buttonFeed) {
+      subValue = atoi((char *)buttonFeed.lastread);
+      Serial.printf("Button Subscription %i \n", subValue);
+    
+    if(subValue==1){
+      stopTheShow();
+    }
+    }
+} 
 }
