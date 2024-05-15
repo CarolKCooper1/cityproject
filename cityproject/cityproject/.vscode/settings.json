@@ -4,5 +4,6 @@
     "files.associations": {
         "*.ino": "cpp"
     },
-    "particle.targetDevice": ""
+    "particle.targetDevice": "",
+    "particle.firmwareVersion": "5.8.0"
 }
