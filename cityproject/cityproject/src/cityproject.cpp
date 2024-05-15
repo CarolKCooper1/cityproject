@@ -113,6 +113,11 @@ counter=COUNT;
 scentCounter=COUNT;
 seqCounter=COUNT;
 
+WiFi.clearCredentials();
+Serial.printf("Has Credentials = %i\n\n",WiFi.hasCredentials());
+delay(1000);
+WiFi.setCredentials("COAVendor");
+
 WiFi.on();
 WiFi.connect();
 while(WiFi.connecting()) {
@@ -126,7 +131,7 @@ mqtt.subscribe(&scentFeed);
 
 //dhplayer setup
 dfPlay.begin();					// Prepares DFPlay for execution
-dfPlay.setVolume(20);			// Sets volume level to 10 (valid range = 0 to 30)
+dfPlay.setVolume(30);			// Sets volume level to 10 (valid range = 0 to 30)
 Selection SDcard = {2,0,0,0,0}; // Selects all tracks on the SD card
 Serial.printf("tracks selected\n");
 dfPlay.play(SDcard);			// Plays the selection
@@ -226,28 +231,28 @@ if(seqTimer.isTimerReady()) {
           digitalWrite(SPIN, HIGH);
           Serial.printf("scent on\n");
           seqCounter++;
-          seqTimer.startTimer(1000);
+          seqTimer.startTimer(5000);
           break;
       case 3://scent 1 off
           Serial.printf("SC %i\n",seqCounter);
           digitalWrite(SPIN, LOW);
           Serial.printf("scent off\n");
           seqCounter++;
-          seqTimer.startTimer(500);
+          seqTimer.startTimer(5000);
           break;
       case 4://scent 2 on
           Serial.printf("SC %i\n",seqCounter);
           digitalWrite(SPIN1, HIGH);
           Serial.printf("scent 2 on\n");
           seqCounter++;
-          seqTimer.startTimer(1000);
+          seqTimer.startTimer(5000);
           break;
       case 5://scent 2 off
           Serial.printf("SC %i\n",seqCounter);
           digitalWrite(SPIN1, LOW);
           Serial.printf("scent 2 off\n");
           seqCounter++;
-          seqTimer.startTimer(500);
+          seqTimer.startTimer(5000);
           break;
       case 6://stepper motor
           Serial.printf("SC %i\n",seqCounter);
@@ -277,26 +282,26 @@ if(scentTimer.isTimerReady()) {
           digitalWrite(SPIN, HIGH);
           Serial.printf("scent on\n");
           scentCounter++;
-          scentTimer.startTimer(1000);
+          scentTimer.startTimer(5000);
           break;
       case 1://scent 1 off
           Serial.printf("Scent Counter %i\n",scentCounter);
           digitalWrite(SPIN, LOW);
           Serial.printf("scent off\n");
           scentCounter++;
-          scentTimer.startTimer(500);
+          scentTimer.startTimer(5000);
           break;
       case 2://scent 2 on
           Serial.printf("Scent Counter %i\n",scentCounter);
           digitalWrite(SPIN1, HIGH);
           scentCounter++;
-          scentTimer.startTimer(1000);
+          scentTimer.startTimer(5000);
           break;
       case 3://scent 2 off
           Serial.printf("Scent Counter %i\n",scentCounter);
           digitalWrite(SPIN1, LOW);
           scentCounter++;
-          scentTimer.startTimer(500);
+          scentTimer.startTimer(5000);
           break;
       case 4://stepper motor
           Serial.printf("Scent Counter %i\n",scentCounter);
@@ -304,8 +309,6 @@ if(scentTimer.isTimerReady()) {
           myStepper.step(-steps);
           delay(500);
           myStepper.step(steps);
-        
-         
           Serial.printf("candy time\n");
           scentCounter++;
           scentTimer.startTimer(5000);
@@ -404,7 +407,7 @@ void playsounds(){
   Serial.printf("Player Paused\n");
 }
 
-// Functions by Brian Rashap
+// Bubble sort Functions by Brian Rashap
 // Fill the array with random colors (Blue to Red)
 void fillArray(int *clrArray, int n) {
   int i;
